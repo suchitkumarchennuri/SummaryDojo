@@ -3,6 +3,7 @@ const nextConfig = {
   images: {
     domains: ["res.cloudinary.com", "s3.amazonaws.com"],
   },
+  output: "standalone",
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if

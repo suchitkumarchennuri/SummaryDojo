@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, FormEvent, useEffect, useRef, Suspense } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import DownloadButton from "./DownloadButton";
 
 interface SearchResult {
@@ -16,54 +16,37 @@ interface SearchResult {
   highlights: string[];
 }
 
-// Main component that wraps SearchContent in a Suspense boundary
+// Main component that doesn't rely on useSearchParams
 export default function Search() {
-  return (
-    <Suspense fallback={<SearchLoadingState />}>
-      <SearchContent />
-    </Suspense>
-  );
-}
-
-// Separate component that uses useSearchParams
-function SearchContent() {
   const router = useRouter();
-  // Safely access search params with a try-catch to handle SSR/deployment issues
-  let initialQuery = "";
-  try {
-    const searchParams = useSearchParams();
-    initialQuery = searchParams ? searchParams.get("q") || "" : "";
-  } catch (error) {
-    console.error("Error accessing search params:", error);
-    // Fall back to empty query if there's an error
-    initialQuery = "";
-  }
-
-  const [query, setQuery] = useState(initialQuery);
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  // Add a flag to make sure component is mounted before accessing browser APIs
   const [isMounted, setIsMounted] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Handle component mounting
+  // Check if the component has mounted before running any client-side code
   useEffect(() => {
     setIsMounted(true);
-  }, []);
 
-  // Perform search when the component mounts if there's a query parameter
-  useEffect(() => {
-    if (isMounted && initialQuery) {
-      performSearch(initialQuery);
+    // Get the query from the URL on component mount
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlQuery = urlParams.get("q");
+      if (urlQuery) {
+        setQuery(urlQuery);
+        performSearch(urlQuery);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery, isMounted]);
+  }, []);
 
   // Add keyboard shortcut to focus the search bar (Cmd+K or Ctrl+K)
   useEffect(() => {
+    if (!isMounted) return;
+
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Check if Cmd+K or Ctrl+K is pressed
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -83,15 +66,15 @@ function SearchContent() {
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown);
     };
-  }, []);
+  }, [isMounted]);
 
   const performSearch = async (searchQuery: string) => {
+    if (!isMounted) return;
+
     setIsSearching(true);
     setError("");
     setResults([]);
     setAiAnswer(null);
-
-    console.log("Starting search with query:", searchQuery);
 
     try {
       // Add a timeout to abort the request if it takes too long
@@ -118,8 +101,6 @@ function SearchContent() {
 
       clearTimeout(timeoutId);
 
-      console.log("Search API response status:", response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Error response from search API:", errorText);
@@ -129,17 +110,17 @@ function SearchContent() {
         try {
           // Try to parse as JSON
           const errorData = JSON.parse(errorText);
-          console.log("Parsed error data:", errorData);
           errorMessage = errorData.error || errorMessage;
           if (errorData.message) {
             errorMessage += `: ${errorData.message}`;
           }
         } catch (e) {
-          console.error("Error parsing error response as JSON:", e);
           // If not JSON, it might be HTML from a redirect
           if (response.status === 401) {
             errorMessage = "You are not authenticated. Please sign in again.";
-            router.push("/sign-in");
+            if (isMounted) {
+              window.location.href = "/sign-in";
+            }
             return;
           }
         }
@@ -148,8 +129,6 @@ function SearchContent() {
       }
 
       const rawData = await response.text();
-      console.log("Raw response data:", rawData.substring(0, 200) + "...");
-
       let data;
       try {
         data = JSON.parse(rawData);
@@ -157,8 +136,6 @@ function SearchContent() {
         console.error("Error parsing response as JSON:", jsonError);
         throw new Error("Invalid response format from search API");
       }
-
-      console.log("Parsed search results:", data);
 
       // If we got here, we have valid search results - update state
       if (data.results) {
@@ -170,14 +147,12 @@ function SearchContent() {
       // If we have an AI-powered answer, set it in state
       if (data.aiAnswer) {
         setAiAnswer(data.aiAnswer);
-        console.log("AI answer received:", data.aiAnswer);
       } else {
         setAiAnswer(null);
       }
 
       // Handle the case where we get a warning message from the API
       if (data.warning) {
-        console.warn("Search warning:", data.warning);
         setError(`Note: ${data.warning}`);
       }
 
@@ -232,20 +207,13 @@ function SearchContent() {
     }
 
     try {
-      // Update the URL with the search query
+      // Use traditional navigation approach instead of Next.js router
       const params = new URLSearchParams();
       params.set("q", query);
 
-      // Use a safer approach to navigation
+      // Update URL without navigation
       const newUrl = `/search?${params.toString()}`;
-
-      try {
-        router.push(newUrl);
-      } catch (navError) {
-        console.error("Navigation error:", navError);
-        // If navigation fails, we'll still perform the search
-        window.history.pushState({}, "", newUrl);
-      }
+      window.history.pushState({}, "", newUrl);
 
       await performSearch(query);
     } catch (searchError) {
@@ -255,6 +223,11 @@ function SearchContent() {
       );
     }
   };
+
+  // Don't render anything until the component is mounted
+  if (!isMounted) {
+    return <SearchLoadingState />;
+  }
 
   return (
     <main className="max-w-7xl mx-auto p-4 md:p-8">
