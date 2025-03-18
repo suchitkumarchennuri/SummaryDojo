@@ -28,8 +28,16 @@ export default function Search() {
 // Separate component that uses useSearchParams
 function SearchContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") || "";
+  // Safely access search params with a try-catch to handle SSR/deployment issues
+  let initialQuery = "";
+  try {
+    const searchParams = useSearchParams();
+    initialQuery = searchParams ? searchParams.get("q") || "" : "";
+  } catch (error) {
+    console.error("Error accessing search params:", error);
+    // Fall back to empty query if there's an error
+    initialQuery = "";
+  }
 
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -38,14 +46,21 @@ function SearchContent() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Add a flag to make sure component is mounted before accessing browser APIs
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Handle component mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Perform search when the component mounts if there's a query parameter
   useEffect(() => {
-    if (initialQuery) {
+    if (isMounted && initialQuery) {
       performSearch(initialQuery);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery]);
+  }, [initialQuery, isMounted]);
 
   // Add keyboard shortcut to focus the search bar (Cmd+K or Ctrl+K)
   useEffect(() => {
@@ -83,14 +98,23 @@ function SearchContent() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const response = await fetch("/api/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query: searchQuery }),
-        signal: controller.signal,
-      });
+      let response;
+      try {
+        response = await fetch("/api/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query: searchQuery }),
+          signal: controller.signal,
+        });
+      } catch (fetchError) {
+        console.error("Network error during fetch:", fetchError);
+        clearTimeout(timeoutId);
+        throw new Error(
+          "Network error while searching. Please check your connection and try again."
+        );
+      }
 
       clearTimeout(timeoutId);
 
@@ -207,12 +231,29 @@ function SearchContent() {
       return;
     }
 
-    // Update the URL with the search query
-    const params = new URLSearchParams(window.location.search);
-    params.set("q", query);
-    router.push(`/search?${params.toString()}`);
+    try {
+      // Update the URL with the search query
+      const params = new URLSearchParams();
+      params.set("q", query);
 
-    await performSearch(query);
+      // Use a safer approach to navigation
+      const newUrl = `/search?${params.toString()}`;
+
+      try {
+        router.push(newUrl);
+      } catch (navError) {
+        console.error("Navigation error:", navError);
+        // If navigation fails, we'll still perform the search
+        window.history.pushState({}, "", newUrl);
+      }
+
+      await performSearch(query);
+    } catch (searchError) {
+      console.error("Search error:", searchError);
+      setError(
+        "An error occurred while processing your search. Please try again."
+      );
+    }
   };
 
   return (
