@@ -45,8 +45,8 @@ export default function DocumentNotFound() {
           Document Not Found
         </h2>
         <p className="text-gray-600 mb-6 text-center max-w-md">
-          The document you're looking for doesn't exist or you don't have access
-          to it.
+          The document you&apos;re looking for doesn&apos;t exist or you
+          don&apos;t have access to it.
         </p>
         <Link
           href="/dashboard"

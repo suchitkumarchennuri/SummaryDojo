@@ -31,7 +31,7 @@ export const createFaissIndex = (documents: IDocument[]): Index => {
     // Add embeddings to index
     console.log(`Adding ${embeddings.length} embeddings to index`);
 
-    // @ts-ignore - Type mismatch with FAISS library
+    // @ts-expect-error - Type mismatch with FAISS library
     index.add(embeddings);
 
     return index;
@@ -75,16 +75,16 @@ export const searchSimilarDocuments = async (
 
     // Super simple approach: use try-catch and return fallback for ANY error
     try {
-      // @ts-ignore - Type mismatch with FAISS library
+      // @ts-expect-error - Type mismatch with FAISS library
       const searchResult = index.search([queryEmbedding], k);
 
       // Extract results and map to documents - all wrapped in try-catch
       const results: { document: IDocument; score: number }[] = [];
 
       try {
-        // @ts-ignore - Type safety ignored for simplicity
+        // @ts-expect-error - Type safety ignored for simplicity
         for (let i = 0; i < searchResult.labels[0].length; i++) {
-          // @ts-ignore - Type safety ignored for simplicity
+          // @ts-expect-error - Type safety ignored for simplicity
           const idx = searchResult.labels[0][i];
 
           // Skip invalid indices
@@ -92,7 +92,7 @@ export const searchSimilarDocuments = async (
 
           results.push({
             document: documents[idx],
-            // @ts-ignore - Type safety ignored for simplicity
+            // @ts-expect-error - Type safety ignored for simplicity
             score: searchResult.distances[0][i],
           });
         }

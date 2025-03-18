@@ -1,5 +1,3 @@
-import Loading from "@/components/Loading";
-
 export default function DashboardLoading() {
   return (
     <main className="max-w-7xl mx-auto p-4 md:p-8">

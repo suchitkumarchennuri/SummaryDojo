@@ -18,6 +18,21 @@ const s3Client = new S3Client({
 
 const bucketName = process.env.AWS_BUCKET_NAME as string;
 
+interface S3Error {
+  name?: string;
+  Code?: string;
+  Message?: string;
+  message?: string;
+  $metadata?: {
+    httpStatusCode?: number;
+    requestId?: string;
+    extendedRequestId?: string;
+    cfId?: string;
+    attempts?: number;
+    totalRetryDelay?: number;
+  };
+}
+
 export const uploadToS3 = async (
   file: Buffer,
   fileName: string,
@@ -39,7 +54,7 @@ export const uploadToS3 = async (
     });
 
     // Execute the upload
-    const result = await upload.done();
+    await upload.done();
 
     // Construct the URL
     const url = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
@@ -73,25 +88,31 @@ export const deleteFromS3 = async (key: string): Promise<void> => {
     try {
       await s3Client.send(headCommand);
       console.log(`Object exists in S3, proceeding with deletion: ${key}`);
-    } catch (err: any) {
+    } catch (err) {
+      // Type assertion for S3 errors which have name, Code properties
+      const s3Error = err as S3Error;
       if (
-        err.name === "NotFound" ||
-        err.Code === "NotFound" ||
-        err.Code === "404"
+        s3Error.name === "NotFound" ||
+        s3Error.Code === "NotFound" ||
+        s3Error.Code === "404"
       ) {
         console.warn(`Object does not exist in S3: ${key}`);
         // If object doesn't exist, no need to delete it
         return;
       } else if (
-        err.name === "AccessDenied" ||
-        err.Code === "AccessDenied" ||
-        err.Code === "403"
+        s3Error.name === "AccessDenied" ||
+        s3Error.Code === "AccessDenied" ||
+        s3Error.Code === "403"
       ) {
         console.warn(`Access denied checking if object exists in S3: ${key}`);
         // Continue with deletion attempt, but it will likely fail again
       } else {
         console.warn(
-          `Error checking if object exists in S3: ${err.message || err}`
+          `Error checking if object exists in S3: ${
+            typeof err === "object" && err !== null && "message" in err
+              ? (err as { message: string }).message
+              : String(err)
+          }`
         );
         // Continue with deletion attempt
       }
@@ -104,20 +125,23 @@ export const deleteFromS3 = async (key: string): Promise<void> => {
 
     await s3Client.send(command);
     console.log(`Successfully deleted object from S3: ${key}`);
-  } catch (error: any) {
-    console.error("Error deleting from S3:", error);
+  } catch (error) {
+    const s3Error = error as S3Error;
+    console.error("Error deleting from S3:", s3Error);
 
     // Log more detailed error information
-    if (error.$metadata) {
-      console.error("Error metadata:", JSON.stringify(error.$metadata));
+    if (s3Error.$metadata) {
+      console.error("Error metadata:", JSON.stringify(s3Error.$metadata));
     }
 
-    if (error.Code) {
-      console.error(`AWS Error Code: ${error.Code}, Message: ${error.Message}`);
+    if (s3Error.Code) {
+      console.error(
+        `AWS Error Code: ${s3Error.Code}, Message: ${s3Error.Message}`
+      );
     }
 
     throw new Error(
-      `Failed to delete file from S3: ${error.message || "Unknown error"}`
+      `Failed to delete file from S3: ${s3Error.message || "Unknown error"}`
     );
   }
 };
@@ -148,16 +172,9 @@ export const getSignedDownloadUrl = async (
 
     console.log(`Successfully generated signed URL for: ${key}`);
     return signedUrl;
-  } catch (error: any) {
-    console.error("Error generating signed URL:", error);
-
-    // Log more detailed error information
-    if (error.$metadata) {
-      console.error("Error metadata:", JSON.stringify(error.$metadata));
-    }
-
-    throw new Error(
-      `Failed to generate download URL: ${error.message || "Unknown error"}`
-    );
+  } catch (error) {
+    const s3Error = error as S3Error;
+    console.error("Error generating signed URL:", s3Error);
+    throw new Error("Could not generate download URL");
   }
 };

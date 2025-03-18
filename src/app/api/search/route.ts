@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/lib/utils/db";
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
       // STEP 2: Try semantic search if embeddings are available (with error handling)
       console.log("Attempting semantic search...");
 
-      let semanticScores: Record<string, number> = {};
+      const semanticScores: Record<string, number> = {};
 
       try {
         // Generate embedding for the query
@@ -304,7 +305,12 @@ function calculateCosineSimilarity(vec1: number[], vec2: number[]): number {
 
 // Find and extract text highlights containing the query or query words
 function findHighlights(
-  doc: any,
+  doc: {
+    _id: string;
+    extractedText: string;
+    title: string;
+    [key: string]: any; // Allow other properties
+  },
   query: string,
   queryWords: string[]
 ): string[] {
@@ -374,7 +380,18 @@ function findHighlights(
 
 // Helper function to format results consistently
 function formatAndReturnResults(
-  results: Array<{ document: any; score: number; highlights: string[] }>,
+  results: Array<{
+    document: {
+      _id: string;
+      title: string;
+      fileName: string;
+      summary: string;
+      extractedText: string;
+      [key: string]: any; // Allow other properties
+    };
+    score: number;
+    highlights: string[];
+  }>,
   warning?: string,
   aiAnswer?: string | null
 ) {

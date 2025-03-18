@@ -14,13 +14,22 @@ async function getDocument(id: string, userId: string) {
   return JSON.parse(JSON.stringify(document));
 }
 
-interface DocumentDetailProps {
-  params: {
-    id: string;
-  };
-}
+type Params = {
+  id: string;
+};
 
-export default async function DocumentDetail({ params }: DocumentDetailProps) {
+type SearchParams = {
+  [key: string]: string | string[] | undefined;
+};
+
+export default async function DocumentDetail({
+  params,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  searchParams,
+}: {
+  params: Params;
+  searchParams?: SearchParams;
+}) {
   const { id } = params;
   const session = await auth();
   const userId = session.userId;
@@ -76,8 +85,8 @@ export default async function DocumentDetail({ params }: DocumentDetailProps) {
             </svg>
             <h2 className="text-xl font-semibold mb-2">Document not found</h2>
             <p className="text-gray-600 mb-6">
-              The document you're looking for doesn't exist or you don't have
-              access to it.
+              The document you&apos;re looking for doesn&apos;t exist or you
+              don&apos;t have access to it.
             </p>
             <Link
               href="/dashboard"

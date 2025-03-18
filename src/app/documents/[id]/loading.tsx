@@ -1,5 +1,3 @@
-import Loading from "@/components/Loading";
-
 export default function DocumentDetailLoading() {
   return (
     <main className="max-w-7xl mx-auto p-4 md:p-8">

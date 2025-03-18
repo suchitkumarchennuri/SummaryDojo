@@ -1,0 +1,22 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["*.d.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "src/app/api/search/route.ts",
+        "src/app/documents/page.tsx",
+        "src/lib/services/vectorSearchService.ts",
+        "src/types/pdf-parse.d.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
+}

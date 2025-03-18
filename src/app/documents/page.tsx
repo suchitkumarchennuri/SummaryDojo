@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -5,6 +6,20 @@ import connectDB from "@/lib/utils/db";
 import Document from "@/lib/models/Document";
 import DocumentDeleteButton from "./DocumentDeleteButton";
 import DocumentsSearchBar from "./DocumentsSearchBar";
+
+interface DocumentType {
+  _id: string;
+  title: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
+  updatedAt: string;
+  summary?: string;
+  insights?: string[];
+  extractedText?: string;
+  [key: string]: any; // For any additional properties
+}
 
 async function getDocuments(userId: string) {
   await connectDB();
@@ -235,8 +250,8 @@ export default async function DocumentsPage() {
               No documents found
             </h2>
             <p className="text-sm sm:text-base text-gray-600 mb-8 max-w-md mx-auto line-clamp-3">
-              You haven't uploaded any documents yet. Upload your first document
-              to start using SummaryDojo.
+              You haven&apos;t uploaded any documents yet. Upload your first
+              document to start using SummaryDojo.
             </p>
             <Link
               href="/upload"
@@ -315,7 +330,7 @@ export default async function DocumentsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {documents.map((doc: any) => (
+                  {documents.map((doc: DocumentType) => (
                     <tr key={doc._id} className="hover:bg-gray-50">
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useEffect, useRef } from "react";
+import { useState, FormEvent, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import DownloadButton from "./DownloadButton";
@@ -16,7 +16,17 @@ interface SearchResult {
   highlights: string[];
 }
 
+// Main component that wraps SearchContent in a Suspense boundary
 export default function Search() {
+  return (
+    <Suspense fallback={<SearchLoadingState />}>
+      <SearchContent />
+    </Suspense>
+  );
+}
+
+// Separate component that uses useSearchParams
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -34,6 +44,7 @@ export default function Search() {
     if (initialQuery) {
       performSearch(initialQuery);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
   // Add keyboard shortcut to focus the search bar (Cmd+K or Ctrl+K)
@@ -395,9 +406,9 @@ export default function Search() {
             <div>
               <p className="text-sm text-blue-800 font-medium">Pro Tip:</p>
               <p className="text-sm text-blue-700">
-                Try using natural language questions like "What is the main
-                point of the document?" or "Find information about marketing
-                strategies"
+                Try using natural language questions like &quot;What is the main
+                point of the document?&quot; or &quot;Find information about
+                marketing strategies&quot;
               </p>
             </div>
           </div>
@@ -602,8 +613,8 @@ export default function Search() {
                 Ask Questions
               </h3>
               <p className="mt-1 text-sm text-gray-600">
-                Use natural language questions like "What is the main point of
-                the document?"
+                Use natural language questions like &quot;What is the main point
+                of the document?&quot;
               </p>
             </div>
           </div>
@@ -655,8 +666,8 @@ export default function Search() {
                 Try Different Phrasings
               </h3>
               <p className="mt-1 text-sm text-gray-600">
-                Experiment with different ways of asking if you don't get the
-                results you expect
+                Experiment with different ways of asking if you don&apos;t get
+                the results you expect
               </p>
             </div>
           </div>
@@ -729,5 +740,28 @@ export default function Search() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Loading state component
+function SearchLoadingState() {
+  return (
+    <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="mb-8">
+        <div className="h-12 w-full max-w-4xl bg-gray-200 rounded-xl animate-pulse"></div>
+      </div>
+      <div className="space-y-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white rounded-xl shadow-sm p-6">
+            <div className="h-6 bg-gray-200 w-1/3 rounded mb-4 animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

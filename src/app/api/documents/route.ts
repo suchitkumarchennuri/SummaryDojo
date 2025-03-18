@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/aiService";
 
 // GET /api/documents - Get all documents for the current user
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await auth();
     const userId = session.userId;
@@ -129,19 +129,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Extract text from document - pass the file type
-    let extractedText = await extractTextFromPDF(buffer, file.type);
+    const extractedText = await extractTextFromPDF(buffer, file.type);
     console.log("Text extracted from document, length:", extractedText.length);
 
     // Generate summary - this now handles errors internally
-    let summary = await generateSummary(extractedText);
+    const summary = await generateSummary(extractedText);
     console.log("Summary generated");
 
     // Extract key insights - this now handles errors internally
-    let insights = await extractKeyInsights(extractedText);
+    const insights = await extractKeyInsights(extractedText);
     console.log("Insights extracted");
 
     // Generate embeddings - this now handles errors internally
-    let embedding = await generateEmbeddings(extractedText);
+    const embedding = await generateEmbeddings(extractedText);
     console.log("Embeddings generated");
 
     // Connect to database
@@ -244,11 +244,14 @@ export async function DELETE(req: NextRequest) {
         try {
           await deleteFromS3(s3Key);
           console.log(`Successfully deleted file from S3: ${s3Key}`);
-        } catch (innerError: any) {
+        } catch (innerError) {
+          // Type guard to check if error has a message property
+          const errorWithMessage = innerError as { message?: string };
+
           // If there's an AccessDenied error, we can still proceed with DB deletion
           if (
-            innerError.message &&
-            innerError.message.includes("AccessDenied")
+            errorWithMessage.message &&
+            errorWithMessage.message.includes("AccessDenied")
           ) {
             console.warn(
               `S3 Access Denied for key: ${s3Key}. Continuing with database deletion.`
@@ -257,7 +260,7 @@ export async function DELETE(req: NextRequest) {
           } else {
             // For other errors, we still want to log but continue with database deletion
             console.error(
-              `S3 deletion error (continuing with DB deletion): ${innerError.message}`
+              `S3 deletion error (continuing with DB deletion): ${errorWithMessage.message}`
             );
           }
         }

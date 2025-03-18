@@ -22,39 +22,42 @@ export default function Upload() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    // Filter files by type and size
-    const validFiles = acceptedFiles.filter((file) => {
-      // Check file type
-      const isValidType =
-        file.type.includes("pdf") ||
-        file.type.includes("word") ||
-        file.type.includes("docx") ||
-        file.type.includes("doc");
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      // Filter files by type and size
+      const validFiles = acceptedFiles.filter((file) => {
+        // Check file type
+        const isValidType =
+          file.type.includes("pdf") ||
+          file.type.includes("word") ||
+          file.type.includes("docx") ||
+          file.type.includes("doc");
 
-      // Check file size
-      const isValidSize = file.size <= MAX_FILE_SIZE;
+        // Check file size
+        const isValidSize = file.size <= MAX_FILE_SIZE;
 
-      if (!isValidType) {
-        setError(
-          `File "${file.name}" is not supported. Only PDF and Word documents are allowed.`
-        );
-        return false;
+        if (!isValidType) {
+          setError(
+            `File "${file.name}" is not supported. Only PDF and Word documents are allowed.`
+          );
+          return false;
+        }
+
+        if (!isValidSize) {
+          setError(`File "${file.name}" exceeds the 10MB size limit.`);
+          return false;
+        }
+
+        return true;
+      });
+
+      if (validFiles.length > 0) {
+        setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+        setError("");
       }
-
-      if (!isValidSize) {
-        setError(`File "${file.name}" exceeds the 10MB size limit.`);
-        return false;
-      }
-
-      return true;
-    });
-
-    if (validFiles.length > 0) {
-      setFiles((prevFiles) => [...prevFiles, ...validFiles]);
-      setError("");
-    }
-  }, []);
+    },
+    [MAX_FILE_SIZE]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

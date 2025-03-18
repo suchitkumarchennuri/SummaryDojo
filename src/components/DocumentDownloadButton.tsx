@@ -4,12 +4,10 @@ import { useState } from "react";
 
 interface DocumentDownloadButtonProps {
   documentId: string;
-  fileName: string;
 }
 
 export default function DocumentDownloadButton({
   documentId,
-  fileName,
 }: DocumentDownloadButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

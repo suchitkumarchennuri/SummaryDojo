@@ -7,10 +7,28 @@ import SearchBar from "./SearchBar";
 import DocumentDeleteButton from "./DocumentDeleteButton";
 import DownloadButton from "./DownloadButton";
 
+// Interface for serialized document data
+interface SerializedDocument {
+  _id: string;
+  userId: string;
+  title: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  s3Key: string;
+  s3Url: string;
+  extractedText: string;
+  summary: string;
+  insights: string[];
+  embedding: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 async function getDocuments(userId: string) {
   await connectDB();
   const documents = await Document.find({ userId }).sort({ createdAt: -1 });
-  return JSON.parse(JSON.stringify(documents));
+  return JSON.parse(JSON.stringify(documents)) as SerializedDocument[];
 }
 
 export default async function Dashboard() {
@@ -141,7 +159,7 @@ export default async function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {documents.map((doc: any) => (
+            {documents.map((doc: SerializedDocument) => (
               <div
                 key={doc._id}
                 className="theme-card overflow-hidden hover:shadow-md transition-shadow"
