@@ -1,8 +1,43 @@
 @import "tailwindcss";
 
 :root {
+  /* Base Colors */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Gradient Colors */
+  --gradient-start: #6366f1;
+  --gradient-mid: #8b5cf6;
+  --gradient-end: #d946ef;
+
+  /* Dark Theme Variables */
+  --dark-bg: #121212;
+  --dark-surface: #1e1e1e;
+  --dark-card: #242424;
+  --dark-border: #333333;
+  --dark-text: #e0e0e0;
+  --dark-text-heading: #f5f5f5;
+  --dark-text-secondary: #a0a0a0;
+  --dark-muted: #888888;
+
+  /* Surface Colors for Cards and Sections */
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8f9fa;
+  --surface-tertiary: #f3f4f6;
+
+  /* Interactive Component Colors */
+  --primary-button: var(--gradient-start);
+  --primary-button-hover: #5254c5;
+  --secondary-button: #e5e7eb;
+  --secondary-button-hover: #d1d5db;
+
+  /* Status Colors */
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --success: #10b981;
+  --success-hover: #059669;
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
 }
 
 @theme inline {
@@ -12,15 +47,213 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: var(--dark-bg);
+  --foreground: var(--dark-text);
+  --surface-primary: var(--dark-card);
+  --surface-secondary: var(--dark-surface);
+  --surface-tertiary: #2a2a2a;
+  --secondary-button: var(--dark-surface);
+  --secondary-button-hover: #2a2a2a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Text Color Utility Classes */
+.text-heading {
+  color: var(--dark-text-heading);
+}
+
+.text-body {
+  color: var(--dark-text);
+}
+
+.text-secondary {
+  color: var(--dark-text-secondary);
+}
+
+.text-muted {
+  color: var(--dark-muted);
+}
+
+/* Form Input Styling */
+input,
+textarea,
+select {
+  background-color: var(--dark-surface);
+  color: var(--dark-text);
+  border-color: var(--dark-border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--dark-muted);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--gradient-mid);
+  outline-color: var(--gradient-mid);
+}
+
+/* Consistent Card Style */
+.theme-card {
+  background-color: var(--dark-card);
+  border: 1px solid var(--dark-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background-image: linear-gradient(
+    to right,
+    var(--gradient-start),
+    var(--gradient-mid),
+    var(--gradient-end)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Primary Button Style */
+.btn-primary {
+  background-image: linear-gradient(
+    to right,
+    var(--gradient-start),
+    var(--gradient-mid),
+    var(--gradient-end)
+  );
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary:hover {
+  background-image: linear-gradient(
+    to right,
+    rgba(99, 102, 241, 0.9),
+    rgba(139, 92, 246, 0.9),
+    rgba(217, 70, 239, 0.9)
+  );
+}
+
+/* Secondary Button Style */
+.btn-secondary {
+  background-color: var(--dark-surface);
+  color: var(--dark-text);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--dark-card);
+}
+
+/* Danger Button Style */
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+
+/* Success Button Style */
+.btn-success {
+  background-color: var(--success);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-success:hover {
+  background-color: var(--success-hover);
+}
+
+/* Custom scrollbar styles */
+.dark .custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Gradient animations */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 8s linear infinite;
+  background-size: 200% auto;
+}
+
+@keyframes shine {
+  from {
+    background-position: 200% center;
+  }
+  to {
+    background-position: -200% center;
+  }
+}
+
+.bg-gradient-shine {
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% auto;
 }
