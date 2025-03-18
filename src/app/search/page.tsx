@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, FormEvent, useEffect, useRef } from "react";
+import { useState, FormEvent, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import DownloadButton from "./DownloadButton";
 
 interface SearchResult {
@@ -18,7 +17,6 @@ interface SearchResult {
 
 // Main component that doesn't rely on useSearchParams
 export default function Search() {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -27,20 +25,55 @@ export default function Search() {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Safe navigation function that doesn't depend on the router
+  const safeNavigate = useCallback((path: string) => {
+    if (typeof window !== "undefined") {
+      window.location.href = path;
+    }
+  }, []);
 
   // Check if the component has mounted before running any client-side code
   useEffect(() => {
+    // Set mounted state
     setIsMounted(true);
 
+    // Setup error handling for uncaught errors
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error caught:", event.error);
+      if (event.error?.message?.includes("Connection closed")) {
+        setError(
+          "Connection to the server was lost. Please refresh the page and try again."
+        );
+      }
+    };
+
+    window.addEventListener("error", handleError);
+
     // Get the query from the URL on component mount
-    if (typeof window !== "undefined") {
+    try {
       const urlParams = new URLSearchParams(window.location.search);
       const urlQuery = urlParams.get("q");
       if (urlQuery) {
         setQuery(urlQuery);
-        performSearch(urlQuery);
+        // Wait a moment before performing search to ensure component is fully mounted
+        const timer = setTimeout(() => {
+          performSearch(urlQuery);
+        }, 100);
+        return () => clearTimeout(timer);
       }
+    } catch (err) {
+      console.error("Error reading URL params:", err);
     }
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      // Cancel any in-progress fetches on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   // Add keyboard shortcut to focus the search bar (Cmd+K or Ctrl+K)
@@ -71,15 +104,30 @@ export default function Search() {
   const performSearch = async (searchQuery: string) => {
     if (!isMounted) return;
 
+    // Cancel any previous in-progress searches
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     setIsSearching(true);
     setError("");
-    setResults([]);
+
+    // Keep previous results visible until new ones load
+    if (results.length === 0) {
+      setResults([]);
+    }
+
     setAiAnswer(null);
 
     try {
-      // Add a timeout to abort the request if it takes too long
+      // Create a new abort controller for this search
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      abortControllerRef.current = controller;
+
+      const timeoutId = setTimeout(() => {
+        if (controller.signal.aborted) return;
+        controller.abort();
+      }, 30000); // 30 second timeout
 
       let response;
       try {
@@ -90,10 +138,30 @@ export default function Search() {
           },
           body: JSON.stringify({ query: searchQuery }),
           signal: controller.signal,
+          // Add credentials to ensure cookies are sent
+          credentials: "include",
         });
       } catch (fetchError) {
-        console.error("Network error during fetch:", fetchError);
         clearTimeout(timeoutId);
+        console.error("Network error during fetch:", fetchError);
+
+        if ((fetchError as Error).name === "AbortError") {
+          throw new Error(
+            "Search request timed out. Please try again with a simpler query."
+          );
+        }
+
+        // Check if it's a connection error
+        if (
+          (fetchError as Error).message.includes("fetch failed") ||
+          (fetchError as Error).message.includes("network") ||
+          (fetchError as Error).message.includes("connection")
+        ) {
+          throw new Error(
+            "Network connection error. Please check your internet and try again."
+          );
+        }
+
         throw new Error(
           "Network error while searching. Please check your connection and try again."
         );
@@ -118,9 +186,7 @@ export default function Search() {
           // If not JSON, it might be HTML from a redirect
           if (response.status === 401) {
             errorMessage = "You are not authenticated. Please sign in again.";
-            if (isMounted) {
-              window.location.href = "/sign-in";
-            }
+            safeNavigate("/sign-in");
             return;
           }
         }
@@ -128,9 +194,9 @@ export default function Search() {
         throw new Error(errorMessage);
       }
 
-      const rawData = await response.text();
       let data;
       try {
+        const rawData = await response.text();
         data = JSON.parse(rawData);
       } catch (jsonError) {
         console.error("Error parsing response as JSON:", jsonError);
@@ -195,6 +261,8 @@ export default function Search() {
       }
     } finally {
       setIsSearching(false);
+      // Clear the abort controller reference
+      abortControllerRef.current = null;
     }
   };
 
@@ -207,13 +275,15 @@ export default function Search() {
     }
 
     try {
-      // Use traditional navigation approach instead of Next.js router
+      // Use traditional navigation approach
       const params = new URLSearchParams();
       params.set("q", query);
 
       // Update URL without navigation
       const newUrl = `/search?${params.toString()}`;
-      window.history.pushState({}, "", newUrl);
+      if (typeof window !== "undefined") {
+        window.history.pushState({}, "", newUrl);
+      }
 
       await performSearch(query);
     } catch (searchError) {

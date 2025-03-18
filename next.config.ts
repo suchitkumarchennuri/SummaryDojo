@@ -4,6 +4,12 @@ const nextConfig = {
     domains: ["res.cloudinary.com", "s3.amazonaws.com"],
   },
   output: "standalone",
+  experimental: {
+    serverComponentsExternalPackages: ["mongoose"],
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
@@ -16,6 +22,9 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  // Minimize timeout issues
+  staticPageGenerationTimeout: 180,
+  productionBrowserSourceMaps: true,
 };
 
 export default nextConfig;
