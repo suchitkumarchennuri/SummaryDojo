@@ -25,6 +25,9 @@ const nextConfig = {
   // Minimize timeout issues
   staticPageGenerationTimeout: 180,
   productionBrowserSourceMaps: true,
+  scripts: {
+    build: "NODE_OPTIONS='--max-old-space-size=4096' next build",
+  },
 };
 
 export default nextConfig;
